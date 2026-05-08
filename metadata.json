@@ -1,0 +1,5 @@
+{
+  "name": "OQF AI Academic Auditor",
+  "description": "A comprehensive AI-driven platform for auditing course descriptions (CDP) and evaluating learning outcomes against the Oman Qualifications Framework (OQF) standards, featuring document extraction and structural compliance checks.",
+  "requestFramePermissions": []
+}
