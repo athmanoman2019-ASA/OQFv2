@@ -488,7 +488,18 @@ export const generateOQFCourseCompliance = async (
     Sections to fill:
     1. Course Information (Code, Title, Level, Credit, Program, Proposed Level/Credit).
     2. Course Intent and Role (Description, LOs, PLO Mapping for ALL 4 programs, Indicative Content, Title Reflection).
-    3. LO Quality Checklist (Individual and Collective).
+    3. LO Quality Checklist:
+       - Individual LO Checklist (Evaluate EACH CLO for these 9 items):
+         1. Relate to the course aims.
+         2. Relate directly to the PLOs.
+         3. Begin with a clear, measurable active verb.
+         4. It is clear, precise, and unambiguous.
+         5. It is assessable.
+         6. Covers the content of the course.
+         7. Avoid evaluative or subjective language.
+         8. Avoids jargon, abbreviations or technical terms.
+         9. Is distinct from other learning outcomes.
+       - Collective Checklist (Evaluate the set of CLOs for overlapping coverage, progression, and overall compliance).
 
     CRITICAL: In PLO Mapping, map each LO to relevant PLOs from ALL FOUR specializations (SE, IS, CL, NWSY).
 
