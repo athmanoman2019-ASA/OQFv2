@@ -82,6 +82,140 @@ export interface EvaluationReport {
   final_summary: string;
 }
 
+export interface PLOMapping {
+  cloText: string;
+  overallContribution?: 'Supporting' | 'Supporting*';
+  mappedPLOs: {
+    code: string; // e.g. D-SE-PLO1
+    program: string; // e.g. SE, IS, CL, NWSY
+    contribution: 'Primary' | 'Supporting' | 'Supporting*';
+    explanation: string;
+  }[];
+}
+
+export interface LOChecklist {
+  loNumber: number;
+  loText: string;
+  items: {
+    question: string;
+    satisfied: boolean;
+    comment: string;
+    evidence?: string;
+  }[];
+}
+
+export interface OQFCourseComplianceReport {
+  courseInformation: {
+    code: string;
+    title: string;
+    diplomaLevel: string;
+    creditHours: string;
+    program: string;
+    proposedOQFLevel?: string;
+    proposedCreditValue?: string;
+  };
+  intentAndRole: {
+    courseDescription: string;
+    learningOutcomes: string[];
+    ploMapping: PLOMapping[];
+    indicativeContent: string[];
+    titleReflectsContent: {
+      answer: 'Yes' | 'No';
+      justification: string;
+    };
+  };
+  qualityChecklist: {
+    individualLOs: LOChecklist[];
+    collectiveChecklist: {
+      question: string;
+      satisfied: boolean;
+      comment: string;
+      evidence?: string;
+    }[];
+  };
+}
+
+export interface OQFCreditReport {
+  courseInfo: {
+    title: string;
+    code: string;
+    prerequisites: string;
+    checks: {
+      titleReflectsContent: boolean;
+      writtenInLearningOutcomes: boolean;
+      clearAndUnambiguous: boolean;
+      prerequisitesIdentified: boolean;
+      allLosAssessed: boolean;
+    };
+  };
+  partA: {
+    clos: string[];
+    smartAnalysis: {
+      clo: string;
+      s: boolean;
+      m: boolean;
+      a: boolean;
+      r: boolean;
+      t: boolean;
+      decision: string;
+    }[];
+    taxonomies: {
+      clo: string;
+      characteristic: 'Knowledge' | 'Skills';
+      cognitiveDomain: string;
+      affectiveDomain: string;
+      psychomotorDomain: string;
+    }[];
+  };
+  partB: {
+    verification: {
+      allLoHasCriteria: boolean;
+      allCriteriaLinkToLo: boolean;
+      assessmentMethodTestsIt: boolean;
+    };
+    mapping: {
+      clo: string;
+      criteria: string[];
+      methods: string[];
+    }[];
+  };
+  partC: {
+    mappings: {
+      characteristic: string;
+      bestFitLevel: number;
+      rankedOrder: number;
+      rationale: string;
+    }[];
+    proposedLevel: number;
+    overallLevel: number;
+  };
+  partD: {
+    defaults: {
+      creditHours: number;
+      semesterLength: number;
+      nlhPerCreditPerWeek: number;
+      maxNlh: number;
+      frequency: number;
+    };
+    nlhMatrix: {
+      activity: string;
+      clos: number[];
+      total: number;
+    }[];
+    summary: {
+      activity: string;
+      hoursPerWeek: number;
+      frequency: number;
+      totalHours: number;
+    }[];
+    calculation: {
+      totalNlh: number;
+      creditHoursCalculated: number;
+      oqfCreditValue: number;
+    };
+  };
+}
+
 export interface ApplicabilityReport {
   isApplicable: boolean;
   overallStatus: string;

@@ -594,7 +594,7 @@ export const EvaluationResult: React.FC<EvaluationResultProps> = ({
 }) => {
   const { suggested_course_title, refined_objectives, final_summary } = report;
   const reportRef = useRef<HTMLDivElement>(null);
-  const [isDownloading, setIsDownloading] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const [isSavingJson, setIsSavingJson] = useState(false);
   const [expandedCards, setExpandedCards] = useState<Record<string, boolean>>({});
   const [allExpanded, setAllExpanded] = useState(false);
@@ -705,7 +705,7 @@ export const EvaluationResult: React.FC<EvaluationResultProps> = ({
   };
 
   const handleExportHtml = () => {
-    setIsDownloading(true);
+    setIsExporting(true);
     
     // Expand all before cloning to capture full content
     if (!allExpanded) {
@@ -717,12 +717,9 @@ export const EvaluationResult: React.FC<EvaluationResultProps> = ({
         if (reportRef.current) {
             const reportClone = reportRef.current.cloneNode(true) as HTMLElement;
             
-            // Cleanup: remove actions and buttons
-            const actionsDiv = reportClone.querySelector('#report-actions');
-            if (actionsDiv) actionsDiv.remove();
-            
-            const buttons = reportClone.querySelectorAll('button');
-            buttons.forEach(btn => btn.remove());
+            // Cleanup: remove actions, buttons, and no-print elements
+            const noPrintElements = reportClone.querySelectorAll('.no-print, #report-actions, button');
+            noPrintElements.forEach(el => el.remove());
 
             // Remove internal styles that hide the body (specific to the app view)
             const styleTags = reportClone.querySelectorAll('style');
@@ -758,22 +755,18 @@ export const EvaluationResult: React.FC<EvaluationResultProps> = ({
             color: #1e293b; 
             font-family: 'Inter', sans-serif;
             line-height: 1.5;
+            padding: 2rem;
         }
 
         .report-container { 
-            max-width: 100%; 
+            max-width: 1000px; 
             margin: 0 auto; 
-            padding: 2rem;
+            padding: 1rem;
             background-color: white;
         }
 
         /* Print Optimization */
         @media print {
-            @page {
-                margin: 1cm;
-                size: auto;
-            }
-            
             body { 
                 padding: 0;
                 margin: 0;
@@ -789,90 +782,36 @@ export const EvaluationResult: React.FC<EvaluationResultProps> = ({
                 margin: 0;
             }
 
-            /* Core Page Break Rules */
-            .break-inside-avoid,
-            .comparison-card, 
-            .evaluation-card, 
-            .characteristic-card,
-            .structure-card,
-            .suggestion-card,
-            .summary-box,
-            section,
-            tr, 
-            td, 
-            th,
-            img, 
-            svg {
+            .break-inside-avoid {
                 page-break-inside: avoid !important;
                 break-inside: avoid !important;
-                page-break-before: auto;
-                page-break-after: auto;
-                display: block;
             }
 
-            /* Heading Binding */
-            h1, h2, h3, h4, h5, h6 {
-                page-break-after: avoid !important;
-                break-after: avoid !important;
-                page-break-inside: avoid !important;
-                break-inside: avoid !important;
-                margin-top: 1.5rem;
-                margin-bottom: 0.5rem;
-            }
-            
-            /* Paragraphs and Text */
-            p {
-                orphans: 3;
-                widows: 3;
-                page-break-inside: avoid;
-            }
-
-            /* Images */
-            img {
-                max-width: 100% !important;
-                height: auto !important;
-                page-break-inside: avoid !important;
-                break-inside: avoid !important;
-                display: block;
-            }
-
-            /* Hide elements that shouldn't print */
-            button, .no-print, #report-actions { 
+            button, .no-print { 
                 display: none !important; 
             }
+        }
 
-            /* Layout Adjustments */
-            .grid {
-                display: grid !important;
-                grid-template-columns: repeat(2, 1fr) !important;
-                gap: 1.5rem !important;
-                page-break-inside: auto; /* Allow grid container to break, but children won't */
-            }
-
-            /* Ensure borders are visible */
-            .border {
-                border-color: #cbd5e1 !important;
-                border-width: 1px !important;
-            }
-            
-            /* Replacements styles */
-            .text-content-replacement {
-                display: block;
-                white-space: pre-wrap;
-                border: 1px solid #cbd5e1;
-                padding: 0.75rem;
-                border-radius: 0.375rem;
-                font-size: 0.875rem;
-                color: #334155;
-                page-break-inside: avoid;
-            }
+        .text-content-replacement {
+            display: block;
+            white-space: pre-wrap;
+            border: 1px solid #e2e8f0;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            background-color: #f8fafc;
+            margin-top: 0.5rem;
+            font-size: 0.875rem;
         }
     </style>
 </head>
 <body>
     <div class="report-container">
+        <h1 style="font-size: 2.25rem; font-weight: 900; margin-bottom: 2rem; border-bottom: 4px solid #10b981; padding-bottom: 1rem;">Course Evaluation Report</h1>
         ${reportClone.innerHTML}
     </div>
+    <footer style="margin-top: 4rem; text-align: center; color: #94a3b8; font-size: 0.875rem; border-top: 1px solid #e2e8f0; padding-top: 1rem;">
+        Generated by OQF AI Auditor - ${new Date().toLocaleDateString()}
+    </footer>
 </body>
 </html>`;
 
@@ -880,14 +819,14 @@ export const EvaluationResult: React.FC<EvaluationResultProps> = ({
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `OQF-Evaluation-Report-${courseCode || 'Untitled'}.html`;
+            a.download = `OQF-Evaluation-${courseCode || 'Report'}.html`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
         }
-        setIsDownloading(false);
-    }, 500);
+        setIsExporting(false);
+    }, 300);
   };
 
 
@@ -932,11 +871,11 @@ export const EvaluationResult: React.FC<EvaluationResultProps> = ({
         <p className="text-lg text-slate-600 dark:text-slate-300 mt-1">{courseCode}: {courseTitle}</p>
         <p className="text-md text-slate-500 dark:text-slate-400">OQF Level {level}</p>
         <div id="report-actions" className="absolute top-0 right-0 flex items-center space-x-2">
-            <button id="save-json-button" onClick={handleSaveJson} disabled={isSavingJson || isDownloading} className="flex items-center px-4 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-sm font-semibold text-slate-700 dark:text-slate-200 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 transition-colors">
+            <button id="save-json-button" onClick={handleSaveJson} disabled={isSavingJson || isExporting} className="flex items-center px-4 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-sm font-semibold text-slate-700 dark:text-slate-200 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 transition-colors">
               {isSavingJson ? <><Loader /> Saving...</> : <><IconSave className="h-4 w-4 mr-2" /> Save Data</>}
             </button>
-            <button id="export-html-button" onClick={handleExportHtml} disabled={isDownloading || isSavingJson} className="flex items-center px-4 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-sm font-semibold text-slate-700 dark:text-slate-200 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 transition-colors">
-              {isDownloading ? <><Loader /> Exporting...</> : <><IconFileText className="h-4 w-4 mr-2" /> Export HTML</>}
+            <button id="export-html-button" onClick={handleExportHtml} disabled={isExporting || isSavingJson} className="flex items-center px-4 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-sm font-semibold text-slate-700 dark:text-slate-200 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 transition-colors">
+              {isExporting ? <><Loader /> Exporting...</> : <><IconFileText className="h-4 w-4 mr-2" /> Export HTML</>}
             </button>
         </div>
       </header>
@@ -997,11 +936,11 @@ export const EvaluationResult: React.FC<EvaluationResultProps> = ({
                         className="w-full h-24 p-2 border border-slate-300 dark:border-slate-600 rounded-md focus:ring-2 focus:ring-green-500 bg-white dark:bg-slate-700 text-sm text-slate-700 dark:text-slate-200"
                         value={evaluation.original_learning_outcome}
                         onChange={(e) => handleAsIsOutcomeChange(index, e.target.value)}
-                        disabled={isDownloading || isSavingJson || isReevaluating[index]}
+                        disabled={isExporting || isSavingJson || isReevaluating[index]}
                     />
                      <button
                         onClick={() => handleReevaluate(index)}
-                        disabled={isDownloading || isSavingJson || isReevaluating[index]}
+                        disabled={isExporting || isSavingJson || isReevaluating[index]}
                         className="flex items-center justify-center w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-sm font-semibold text-slate-700 dark:text-slate-200 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         >
                         {isReevaluating[index] ? <><Loader /> Re-evaluating...</> : <><IconSparkles className="h-5 w-5 mr-2" /> Re-evaluate with AI</>}

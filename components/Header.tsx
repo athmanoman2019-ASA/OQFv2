@@ -15,11 +15,11 @@ export const Header: React.FC<HeaderProps> = ({ theme, toggleTheme }) => {
             <IconBook className="h-6 w-6 text-white" />
           </div>
           <div>
-            <h1 className="text-xl md:text-2xl font-bold text-slate-900 dark:text-white">
-              OQF Learning Outcome Design & Evaluation Platform
+            <h1 className="text-xl md:text-2xl font-black text-slate-900 dark:text-white uppercase tracking-tight">
+              OQF Compliance Auditor
             </h1>
-            <p className="text-sm text-slate-500 dark:text-slate-400">
-              AI-Powered Design & Evaluation for Vocational Qualifications
+            <p className="text-[10px] font-black uppercase text-slate-500 dark:text-slate-400 tracking-[0.2em]">
+              AI-Powered Academic Standard Audit & Compliance Platform
             </p>
           </div>
         </div>

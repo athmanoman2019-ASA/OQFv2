@@ -1,5 +1,5 @@
 import { GoogleGenAI, Type } from "@google/genai";
-import { type EvaluationReport, type EvaluationResponse, type ApplicabilityReport } from "../types";
+import { type EvaluationReport, type EvaluationResponse, type OQFCourseComplianceReport, type ApplicabilityReport } from "../types";
 import { OQF_DESCRIPTORS, OQF_COMPLIANCE_CRITERIA } from '../constants/oqfConstants';
 
 // Initialize Gemini directly in the frontend. 
@@ -200,12 +200,362 @@ const cdpDataSchema = {
   required: ['courseTitle', 'courseCode', 'courseObjectives', 'courseDescription', 'learningOutcomes']
 };
 
+const oqfCreditReportSchema = {
+  type: Type.OBJECT,
+  properties: {
+    courseInfo: {
+      type: Type.OBJECT,
+      properties: {
+        title: { type: Type.STRING },
+        code: { type: Type.STRING },
+        prerequisites: { type: Type.STRING },
+        checks: {
+          type: Type.OBJECT,
+          properties: {
+            titleReflectsContent: { type: Type.BOOLEAN },
+            writtenInLearningOutcomes: { type: Type.BOOLEAN },
+            clearAndUnambiguous: { type: Type.BOOLEAN },
+            prerequisitesIdentified: { type: Type.BOOLEAN },
+            allLosAssessed: { type: Type.BOOLEAN }
+          },
+          required: ['titleReflectsContent', 'writtenInLearningOutcomes', 'clearAndUnambiguous', 'prerequisitesIdentified', 'allLosAssessed']
+        }
+      },
+      required: ['title', 'code', 'prerequisites', 'checks']
+    },
+    partA: {
+      type: Type.OBJECT,
+      properties: {
+        clos: { type: Type.ARRAY, items: { type: Type.STRING } },
+        smartAnalysis: {
+          type: Type.ARRAY,
+          items: {
+            type: Type.OBJECT,
+            properties: {
+              clo: { type: Type.STRING },
+              s: { type: Type.BOOLEAN },
+              m: { type: Type.BOOLEAN },
+              a: { type: Type.BOOLEAN },
+              r: { type: Type.BOOLEAN },
+              t: { type: Type.BOOLEAN },
+              decision: { type: Type.STRING }
+            },
+            required: ['clo', 's', 'm', 'a', 'r', 't', 'decision']
+          }
+        },
+        taxonomies: {
+          type: Type.ARRAY,
+          items: {
+            type: Type.OBJECT,
+            properties: {
+              clo: { type: Type.STRING },
+              characteristic: { type: Type.STRING, enum: ['Knowledge', 'Skills'] },
+              cognitiveDomain: { type: Type.STRING },
+              affectiveDomain: { type: Type.STRING },
+              psychomotorDomain: { type: Type.STRING }
+            },
+            required: ['clo', 'characteristic', 'cognitiveDomain', 'affectiveDomain', 'psychomotorDomain']
+          }
+        }
+      },
+      required: ['clos', 'smartAnalysis', 'taxonomies']
+    },
+    partB: {
+      type: Type.OBJECT,
+      properties: {
+        verification: {
+          type: Type.OBJECT,
+          properties: {
+            allLoHasCriteria: { type: Type.BOOLEAN },
+            allCriteriaLinkToLo: { type: Type.BOOLEAN },
+            assessmentMethodTestsIt: { type: Type.BOOLEAN }
+          },
+          required: ['allLoHasCriteria', 'allCriteriaLinkToLo', 'assessmentMethodTestsIt']
+        },
+        mapping: {
+          type: Type.ARRAY,
+          items: {
+            type: Type.OBJECT,
+            properties: {
+              clo: { type: Type.STRING },
+              criteria: { type: Type.ARRAY, items: { type: Type.STRING } },
+              methods: { type: Type.ARRAY, items: { type: Type.STRING } }
+            },
+            required: ['clo', 'criteria', 'methods']
+          }
+        }
+      },
+      required: ['verification', 'mapping']
+    },
+    partC: {
+      type: Type.OBJECT,
+      properties: {
+        mappings: {
+          type: Type.ARRAY,
+          items: {
+            type: Type.OBJECT,
+            properties: {
+              characteristic: { type: Type.STRING },
+              bestFitLevel: { type: Type.NUMBER },
+              rankedOrder: { type: Type.NUMBER },
+              rationale: { type: Type.STRING }
+            },
+            required: ['characteristic', 'bestFitLevel', 'rankedOrder', 'rationale']
+          }
+        },
+        proposedLevel: { type: Type.NUMBER },
+        overallLevel: { type: Type.NUMBER }
+      },
+      required: ['mappings', 'proposedLevel', 'overallLevel']
+    },
+    partD: {
+      type: Type.OBJECT,
+      properties: {
+        defaults: {
+          type: Type.OBJECT,
+          properties: {
+            creditHours: { type: Type.NUMBER },
+            semesterLength: { type: Type.NUMBER },
+            nlhPerCreditPerWeek: { type: Type.NUMBER },
+            maxNlh: { type: Type.NUMBER },
+            frequency: { type: Type.NUMBER }
+          },
+          required: ['creditHours', 'semesterLength', 'nlhPerCreditPerWeek', 'maxNlh', 'frequency']
+        },
+        nlhMatrix: {
+          type: Type.ARRAY,
+          items: {
+            type: Type.OBJECT,
+            properties: {
+              activity: { type: Type.STRING },
+              clos: { type: Type.ARRAY, items: { type: Type.NUMBER } },
+              total: { type: Type.NUMBER }
+            },
+            required: ['activity', 'clos', 'total']
+          }
+        },
+        summary: {
+          type: Type.ARRAY,
+          items: {
+            type: Type.OBJECT,
+            properties: {
+              activity: { type: Type.STRING },
+              hoursPerWeek: { type: Type.NUMBER },
+              frequency: { type: Type.NUMBER },
+              totalHours: { type: Type.NUMBER }
+            },
+            required: ['activity', 'hoursPerWeek', 'frequency', 'totalHours']
+          }
+        },
+        calculation: {
+          type: Type.OBJECT,
+          properties: {
+            totalNlh: { type: Type.NUMBER },
+            creditHoursCalculated: { type: Type.NUMBER },
+            oqfCreditValue: { type: Type.NUMBER }
+          },
+          required: ['totalNlh', 'creditHoursCalculated', 'oqfCreditValue']
+        }
+      },
+      required: ['defaults', 'nlhMatrix', 'summary', 'calculation']
+    }
+  },
+  required: ['courseInfo', 'partA', 'partB', 'partC', 'partD']
+};
+
 
 /**
  * Checks if the AI features are supported.
  */
 export const isAISupported = async (): Promise<boolean> => {
   return !!process.env.GEMINI_API_KEY;
+};
+
+const oqfComplianceReportSchema = {
+  type: Type.OBJECT,
+  properties: {
+    courseInformation: {
+      type: Type.OBJECT,
+      properties: {
+        code: { type: Type.STRING },
+        title: { type: Type.STRING },
+        diplomaLevel: { type: Type.STRING },
+        creditHours: { type: Type.STRING },
+        program: { type: Type.STRING },
+        proposedOQFLevel: { type: Type.STRING },
+        proposedCreditValue: { type: Type.STRING }
+      },
+      required: ['code', 'title', 'diplomaLevel', 'creditHours', 'program', 'proposedOQFLevel', 'proposedCreditValue']
+    },
+    intentAndRole: {
+      type: Type.OBJECT,
+      properties: {
+        courseDescription: { type: Type.STRING },
+        learningOutcomes: { type: Type.ARRAY, items: { type: Type.STRING } },
+        ploMapping: {
+          type: Type.ARRAY,
+          items: {
+            type: Type.OBJECT,
+            properties: {
+              cloText: { type: Type.STRING },
+              mappedPLOs: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    code: { type: Type.STRING },
+                    program: { type: Type.STRING },
+                    contribution: { type: Type.STRING, enum: ['Primary', 'Supporting', 'Supporting*'] },
+                    explanation: { type: Type.STRING }
+                  },
+                  required: ['code', 'program', 'contribution', 'explanation']
+                }
+              }
+            },
+            required: ['cloText', 'mappedPLOs']
+          }
+        },
+        indicativeContent: { type: Type.ARRAY, items: { type: Type.STRING } },
+        titleReflectsContent: {
+          type: Type.OBJECT,
+          properties: {
+            answer: { type: Type.STRING, enum: ['Yes', 'No'] },
+            justification: { type: Type.STRING }
+          },
+          required: ['answer', 'justification']
+        }
+      },
+      required: ['courseDescription', 'learningOutcomes', 'ploMapping', 'indicativeContent', 'titleReflectsContent']
+    },
+    qualityChecklist: {
+      type: Type.OBJECT,
+      properties: {
+        individualLOs: {
+          type: Type.ARRAY,
+          items: {
+            type: Type.OBJECT,
+            properties: {
+              loNumber: { type: Type.NUMBER },
+              loText: { type: Type.STRING },
+              items: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    question: { type: Type.STRING },
+                    satisfied: { type: Type.BOOLEAN },
+                    comment: { type: Type.STRING },
+                    evidence: { type: Type.STRING }
+                  },
+                  required: ['question', 'satisfied', 'comment']
+                }
+              }
+            },
+            required: ['loNumber', 'loText', 'items']
+          }
+        },
+        collectiveChecklist: {
+          type: Type.ARRAY,
+          items: {
+            type: Type.OBJECT,
+            properties: {
+              question: { type: Type.STRING },
+              satisfied: { type: Type.BOOLEAN },
+              comment: { type: Type.STRING },
+              evidence: { type: Type.STRING }
+            },
+            required: ['question', 'satisfied', 'comment']
+          }
+        }
+      },
+      required: ['individualLOs', 'collectiveChecklist']
+    }
+  },
+  required: ['courseInformation', 'intentAndRole', 'qualityChecklist']
+};
+
+export const generateOQFCourseCompliance = async (
+  files: { data: string; mimeType: string }[]
+): Promise<OQFCourseComplianceReport> => {
+  const prompt = `
+    Analyze the provided course documents to fill the OQF Course Compliance Document.
+    
+    You have been provided with:
+    - Syllabus/Handbook
+    - Consolidated PLO File (SE, IS, CL, NWSY)
+    - Optional Template
+
+    Sections to fill:
+    1. Course Information (Code, Title, Level, Credit, Program, Proposed Level/Credit).
+    2. Course Intent and Role (Description, LOs, PLO Mapping for ALL 4 programs, Indicative Content, Title Reflection).
+    3. LO Quality Checklist (Individual and Collective).
+
+    CRITICAL: In PLO Mapping, map each LO to relevant PLOs from ALL FOUR specializations (SE, IS, CL, NWSY).
+
+    Output strictly in the specified JSON format.
+  `;
+
+  const contents: any[] = [
+    {
+      role: 'user',
+      parts: [
+        { text: prompt },
+        ...files.map(f => f.mimeType === 'text/plain' ? { text: f.data } : { inlineData: f })
+      ]
+    }
+  ];
+
+  const result = await ai.models.generateContent({
+    model: modelName,
+    contents,
+    config: {
+      responseMimeType: "application/json",
+      responseSchema: oqfComplianceReportSchema,
+    }
+  });
+
+  return JSON.parse(result.text);
+};
+
+export const calculateOQFCredits = async (data: string, mimeType: string): Promise<any> => {
+    const prompt = `
+        You are an OQF compliance specialist. Analyze the provided Course Delivery Plan (CDP) document.
+        Perform a full OQF compliance analysis according to UTAS bylaws:
+        - Course Credit Hour = 3 (Default)
+        - Semester Length = 18 weeks
+        - Teaching weeks (frequency) = 15
+        - NLH per total Credit per week = 9
+        - Maximum NLH per semester = 162
+        
+        Follow these steps:
+        1. Extract course titles, codes, prerequisites, and numbered CLOs.
+        2. SMART analysis for all CLOs.
+        3. Assign OQF characteristics (Knowledge/Skills) and Bloom's domains.
+        4. Map Assessment Criteria to methods and CLOs.
+        5. Propose OQF Level mapping (typically Level 5 for 2nd year diploma).
+        6. Calculate Notional Learning Hours (NLH) distribution across CLOs.
+        7. Compute final OQF Credit Value.
+        
+        Provide the full report according to the oqfCreditReportSchema.
+    `;
+    
+    const result = await ai.models.generateContent({
+        model: modelName,
+        contents: [
+            {
+                role: 'user',
+                parts: [
+                    { text: prompt },
+                    mimeType === 'text/plain' ? { text: data } : { inlineData: { data, mimeType } }
+                ]
+            }
+        ],
+        config: {
+            responseMimeType: "application/json",
+            responseSchema: oqfCreditReportSchema,
+        }
+    });
+    return JSON.parse(result.text);
 };
 
 export const evaluateLearningOutcome = async (
@@ -296,7 +646,7 @@ export const refineCourseObjectives = async (
 };
 
 export const extractFromDocument = async (
-    fileBase64: string,
+    data: string,
     mimeType: string
 ): Promise<{
     courseTitle: string;
@@ -321,7 +671,7 @@ export const extractFromDocument = async (
                 role: 'user',
                 parts: [
                     { text: prompt },
-                    { inlineData: { data: fileBase64, mimeType } }
+                    mimeType === 'text/plain' ? { text: data } : { inlineData: { data, mimeType } }
                 ]
             }
         ],

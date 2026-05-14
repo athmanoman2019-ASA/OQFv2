@@ -1,10 +1,12 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { isAISupported, evaluateLearningOutcome, generateExampleOutcome, generateOutcomeFromContent, refineCourseTitle, refineCourseObjectives, extractFromDocument, checkOQFApplicability } from '../services/geminiService';
+import { prepareFileForAI } from '../lib/fileUtils';
 import { type EvaluationReport, type ApplicabilityReport } from '../types';
 import { EvaluationResult } from './EvaluationResult';
 import { Loader } from './Loader';
-import { IconSparkles, IconAlertTriangle, IconBot, IconPlus, IconTrash, IconChevronDown, IconChevronUp, IconInfo, IconUpload, IconFile, IconCheckCircle, IconXCircle, IconAlertCircle, IconClipboardList } from './Icon';
+import { WaitingBar } from './WaitingBar';
+import { IconSparkles, IconAlertTriangle, IconBot, IconPlus, IconTrash, IconChevronDown, IconChevronUp, IconInfo, IconUpload, IconFile, IconCheckCircle, IconXCircle, IconAlertCircle, IconClipboardList, IconFileText } from './Icon';
 import { OQF_DESCRIPTORS } from '../constants/oqfConstants';
 
 const initialExampleOutcomes = [
@@ -44,12 +46,55 @@ export const LearningOutcomeEvaluator: React.FC = () => {
   const [isRefiningObjectives, setIsRefiningObjectives] = useState<boolean>(false);
   const [isExtracting, setIsExtracting] = useState<boolean>(false);
   const [isCheckingApplicability, setIsCheckingApplicability] = useState<boolean>(false);
+  const [isExporting, setIsExporting] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [extractionSuccess, setExtractionSuccess] = useState<boolean>(false);
   const [filledViaExtraction, setFilledViaExtraction] = useState<Set<string>>(new Set());
   const [exampleOutcomes, setExampleOutcomes] = useState<string[]>(initialExampleOutcomes);
 
+  // Persistence: Load from localStorage on mount
+  useEffect(() => {
+    const saved = localStorage.getItem('oqf_evaluator_state');
+    if (saved) {
+      try {
+        const state = JSON.parse(saved);
+        if (state.courseTitle) setCourseTitle(state.courseTitle);
+        if (state.courseCode) setCourseCode(state.courseCode);
+        if (state.courseObjectives) setCourseObjectives(state.courseObjectives);
+        if (state.courseDescription) setCourseDescription(state.courseDescription);
+        if (state.level) setLevel(state.level);
+        if (state.currentStep) setCurrentStep(state.currentStep);
+        if (state.outcomes) setOutcomes(state.outcomes);
+        if (state.courseUnits) setCourseUnits(state.courseUnits);
+        if (state.result) setResult(state.result);
+        if (state.applicabilityReport) setApplicabilityReport(state.applicabilityReport);
+        if (state.filledViaExtraction) setFilledViaExtraction(new Set(state.filledViaExtraction));
+      } catch (e) {
+        console.error('Failed to load saved state:', e);
+      }
+    }
+  }, []);
+
+  // Persistence: Save to localStorage on change
+  useEffect(() => {
+    const state = {
+      courseTitle,
+      courseCode,
+      courseObjectives,
+      courseDescription,
+      level,
+      currentStep,
+      outcomes,
+      courseUnits,
+      result,
+      applicabilityReport,
+      filledViaExtraction: Array.from(filledViaExtraction)
+    };
+    localStorage.setItem('oqf_evaluator_state', JSON.stringify(state));
+  }, [courseTitle, courseCode, courseObjectives, courseDescription, level, currentStep, outcomes, courseUnits, result, applicabilityReport, filledViaExtraction]);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const reportRef = useRef<HTMLDivElement>(null);
   const [dragActive, setDragActive] = useState(false);
 
   const handleDrag = (e: React.DragEvent) => {
@@ -321,16 +366,63 @@ export const LearningOutcomeEvaluator: React.FC = () => {
     }
   };
 
-  const fileToBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => {
-        const base64String = (reader.result as string).split(',')[1];
-        resolve(base64String);
-      };
-      reader.onerror = (error) => reject(error);
-    });
+  const handleExportHtml = () => {
+    if (!reportRef.current || !applicabilityReport) return;
+    setIsExporting(true);
+
+    setTimeout(() => {
+        if (reportRef.current) {
+            const reportClone = reportRef.current.cloneNode(true) as HTMLElement;
+            
+            // Remove interactive elements
+            const exportButtons = reportClone.querySelectorAll('.export-ignore');
+            exportButtons.forEach(el => el.remove());
+
+            const htmlContent = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OQF Compliance Audit - ${courseCode}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+        body { font-family: 'Inter', sans-serif; background: white; color: #1e293b; padding: 2rem; }
+        .report-header { text-align: center; border-bottom: 2px solid #e2e8f0; padding-bottom: 1.5rem; margin-bottom: 2rem; }
+        @media print {
+            body { padding: 0; }
+            .no-print { display: none !important; }
+            .break-inside-avoid { break-inside: avoid; }
+        }
+    </style>
+</head>
+<body>
+    <div class="report-header">
+        <h1 style="font-size: 2rem; font-weight: 900; margin-bottom: 0.5rem;">OQF Compliance Audit Report</h1>
+        <p style="font-size: 1.25rem; font-weight: 600; color: #64748b;">${courseCode}: ${courseTitle}</p>
+    </div>
+    <div class="report-content">
+        ${reportClone.innerHTML}
+    </div>
+    <footer style="margin-top: 3rem; text-align: center; font-size: 0.75rem; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 1rem;">
+        Generated by OQF AI Expert System - ${new Date().toLocaleDateString()}
+    </footer>
+</body>
+</html>`;
+
+            const blob = new Blob([htmlContent], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `OQF-Audit-${courseCode || 'Untitled'}.html`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+        setIsExporting(false);
+    }, 300);
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -357,8 +449,8 @@ export const LearningOutcomeEvaluator: React.FC = () => {
     setExtractionSuccess(false);
 
     try {
-      const base64 = await fileToBase64(file);
-      const extractedData = await extractFromDocument(base64, file.type);
+      const { data, mimeType } = await prepareFileForAI(file);
+      const extractedData = await extractFromDocument(data, mimeType);
       
       if (extractedData) {
         const filled = new Set<string>();
@@ -435,6 +527,8 @@ export const LearningOutcomeEvaluator: React.FC = () => {
     );
   };
 
+  const isAnyBusy = isLoading || isGenerating || isGeneratingFromContent || isRefiningTitle || isRefiningObjectives || isExtracting || isCheckingApplicability || isExporting;
+
   if (checkingSupport) {
     return (
       <div className="flex flex-col items-center justify-center h-64">
@@ -486,6 +580,7 @@ export const LearningOutcomeEvaluator: React.FC = () => {
 
   return (
     <div className="py-2">
+      {isAnyBusy && <WaitingBar />}
       <StepIndicator />
 
       <div className="space-y-10 max-w-4xl mx-auto">
@@ -615,16 +710,46 @@ export const LearningOutcomeEvaluator: React.FC = () => {
                     <label htmlFor="level" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                       Target OQF Level <span className="text-red-500">*</span>
                     </label>
-                    <select
-                      id="level"
-                      value={level}
-                      onChange={(e) => setLevel(e.target.value)}
-                      className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 dark:bg-slate-700"
-                    >
-                      {Object.keys(OQF_DESCRIPTORS).map(levelKey => (
-                        <option key={levelKey} value={levelKey}>Level {levelKey}</option>
-                      ))}
-                    </select>
+                    <div className="space-y-2">
+                      <select
+                        id="level"
+                        value={level}
+                        onChange={(e) => setLevel(e.target.value)}
+                        className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 dark:bg-slate-700"
+                      >
+                        {Object.keys(OQF_DESCRIPTORS).map(levelKey => (
+                          <option key={levelKey} value={levelKey}>Level {levelKey}</option>
+                        ))}
+                      </select>
+                      
+                      <button
+                        type="button"
+                        onClick={() => setShowDescriptors(!showDescriptors)}
+                        className="flex items-center text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 transition-colors"
+                      >
+                        <IconInfo className="h-4 w-4 mr-1" />
+                        {showDescriptors ? 'Hide' : 'Show'} Level {level} Descriptors
+                        {showDescriptors ? <IconChevronUp className="ml-1 h-3 w-3" /> : <IconChevronDown className="ml-1 h-3 w-3" />}
+                      </button>
+
+                      {showDescriptors && (
+                        <div className="mt-2 p-4 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-800 rounded-lg text-xs text-slate-700 dark:text-slate-300 animate-in fade-in slide-in-from-top-2 duration-300">
+                          <h4 className="font-black uppercase tracking-widest text-[10px] text-indigo-500 mb-3 select-none">OQF Level {level} Descriptors</h4>
+                          <div className="prose prose-sm prose-slate dark:prose-invert max-w-none">
+                            {OQF_DESCRIPTORS[level].split('\n').map((line, i) => {
+                              if (line.trim().startsWith('*')) {
+                                return <li key={i} className="ml-4 list-disc mb-1">{line.replace('*', '').trim()}</li>;
+                              }
+                              if (line.trim().match(/^\d\./)) {
+                                return <p key={i} className="font-bold mt-3 mb-1 text-slate-900 dark:text-white">{line}</p>;
+                              }
+                              if (line.trim() === '') return <div key={i} className="h-2" />;
+                              return <p key={i} className="mb-2">{line}</p>;
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -832,19 +957,28 @@ export const LearningOutcomeEvaluator: React.FC = () => {
                   </button>
                 </div>
               ) : (
-                <div className={`p-8 rounded-2xl border-2 transition-all animate-in zoom-in-95 duration-500 ${applicabilityReport.isApplicable ? 'bg-green-50 dark:bg-green-900/10 border-green-200 dark:border-green-800' : 'bg-amber-50 dark:bg-amber-900/10 border-amber-200 dark:border-amber-800'}`}>
-                  <div className="flex items-center mb-6">
-                    <div className={`p-2 rounded-lg mr-4 ${applicabilityReport.isApplicable ? 'bg-green-100 dark:bg-green-800 text-green-600 dark:text-green-300' : 'bg-amber-100 dark:bg-amber-800 text-amber-600 dark:text-amber-300'}`}>
-                      {applicabilityReport.isApplicable ? (
-                        <IconCheckCircle className="h-8 w-8" />
-                      ) : (
-                        <IconXCircle className="h-8 w-8" />
-                      )}
+                <div ref={reportRef} className={`p-8 rounded-2xl border-2 transition-all animate-in zoom-in-95 duration-500 ${applicabilityReport.isApplicable ? 'bg-green-50 dark:bg-green-900/10 border-green-200 dark:border-green-800' : 'bg-amber-50 dark:bg-amber-900/10 border-amber-200 dark:border-amber-800'}`}>
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center">
+                      <div className={`p-2 rounded-lg mr-4 ${applicabilityReport.isApplicable ? 'bg-green-100 dark:bg-green-800 text-green-600 dark:text-green-300' : 'bg-amber-100 dark:bg-amber-800 text-amber-600 dark:text-amber-300'}`}>
+                        {applicabilityReport.isApplicable ? (
+                          <IconCheckCircle className="h-8 w-8" />
+                        ) : (
+                          <IconXCircle className="h-8 w-8" />
+                        )}
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-black text-slate-800 dark:text-slate-100">{applicabilityReport.overallStatus}</h3>
+                        <p className="text-sm font-semibold text-slate-500 uppercase tracking-widest tracking-tighter">Audit Result</p>
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="text-xl font-black text-slate-800 dark:text-slate-100">{applicabilityReport.overallStatus}</h3>
-                      <p className="text-sm font-semibold text-slate-500 uppercase tracking-widest tracking-tighter">Audit Result</p>
-                    </div>
+                    <button 
+                        onClick={handleExportHtml}
+                        disabled={isExporting}
+                        className="export-ignore flex items-center px-4 py-2 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-bold rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 transition-all shadow-sm"
+                    >
+                        {isExporting ? <><Loader /> Exporting...</> : <><IconFileText className="h-4 w-4 mr-2" /> Export HTML</>}
+                    </button>
                   </div>
                   
                   <blockquote className="border-l-4 border-slate-300 dark:border-slate-600 pl-4 py-2 italic text-slate-700 dark:text-slate-300 mb-8 text-lg">
