@@ -15,7 +15,8 @@ import {
     IconFileText,
     IconClipboardList,
     IconSparkles,
-    IconClipboard
+    IconClipboard,
+    IconTrash
 } from './Icon';
 
 export const OQFCourseCompliance: React.FC = () => {
@@ -325,6 +326,24 @@ export const OQFCourseCompliance: React.FC = () => {
         }, 300);
     };
 
+    const handleReset = () => {
+        if (window.confirm("Are you sure you want to reset and start a new course audit?")) {
+            setReport(null);
+            setCourseCode('');
+            setFiles({
+                syllabus: null,
+                plo: null,
+                template: null
+            });
+            setSavedFilenames({});
+            setManualIndividualLOEdits({});
+            setManualCollectiveEdits(null);
+            setManualPLOEdits({});
+            setError(null);
+            localStorage.removeItem('oqf_compliance_state');
+        }
+    };
+
     const isAnyActionLoading = isLoading || isExporting;
 
     if (isLoading) {
@@ -348,6 +367,13 @@ export const OQFCourseCompliance: React.FC = () => {
                     <h2 className="text-3xl font-black text-slate-800 dark:text-slate-100 tracking-tight">OQF Compliance Report</h2>
                     <div className="flex items-center space-x-3">
                         <button 
+                            onClick={handleReset}
+                            className="flex items-center px-4 py-2 text-red-600 dark:text-red-400 font-bold hover:bg-red-50 dark:hover:bg-red-900/10 rounded-xl transition-all text-sm mr-2"
+                        >
+                            <IconTrash className="h-4 w-4 mr-2" />
+                            Reset All
+                        </button>
+                        <button 
                             onClick={handleCopyText}
                             className="flex items-center px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-sm font-bold rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-all border border-slate-200 dark:border-slate-700"
                         >
@@ -360,12 +386,6 @@ export const OQFCourseCompliance: React.FC = () => {
                             className="flex items-center px-4 py-2 bg-indigo-600 text-white text-sm font-bold rounded-xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-600/20"
                         >
                             {isExporting ? <><Loader /> Exporting...</> : <><IconFileText className="h-4 w-4 mr-2" /> Export HTML</>}
-                        </button>
-                        <button 
-                            onClick={() => setReport(null)}
-                            className="px-4 py-2 text-sm font-bold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors"
-                        >
-                            Start New Audit
                         </button>
                     </div>
                 </div>
@@ -794,9 +814,20 @@ export const OQFCourseCompliance: React.FC = () => {
         <div className="max-w-4xl mx-auto py-12 px-4 relative">
             {isAnyActionLoading && <WaitingBar />}
             <div className="text-center space-y-4 mb-12">
-                <div className="inline-flex items-center px-3 py-1 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 text-[10px] font-black uppercase tracking-widest border border-indigo-200 dark:border-indigo-800">
-                    <IconSparkles className="h-3 w-3 mr-2" />
-                    Bylaws Compliance Agent
+                <div className="flex items-center justify-center space-x-4">
+                    <div className="inline-flex items-center px-3 py-1 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 text-[10px] font-black uppercase tracking-widest border border-indigo-200 dark:border-indigo-800">
+                        <IconSparkles className="h-3 w-3 mr-2" />
+                        Bylaws Compliance Agent
+                    </div>
+                    {(courseCode || files.syllabus || files.plo) && (
+                        <button 
+                            onClick={handleReset}
+                            className="text-xs font-bold text-red-500 hover:text-red-700 flex items-center"
+                        >
+                            <IconTrash className="h-3.5 w-3.5 mr-1" />
+                            Reset
+                        </button>
+                    )}
                 </div>
                 <h2 className="text-5xl font-black text-slate-800 dark:text-slate-100 tracking-tight leading-tight">
                     OQF Course Compliance <br/> & PLO Mapping

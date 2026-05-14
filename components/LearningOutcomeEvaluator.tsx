@@ -28,13 +28,16 @@ interface LearningOutcome {
 }
 
 export const LearningOutcomeEvaluator: React.FC = () => {
+  const initialOutcomes = [{ id: Date.now(), text: '' }];
+  const initialUnits = [{ id: Date.now(), name: '', topics: '' }];
+
   const [currentStep, setCurrentStep] = useState<number>(1);
   const [courseTitle, setCourseTitle] = useState<string>('');
   const [courseCode, setCourseCode] = useState<string>('');
   const [courseObjectives, setCourseObjectives] = useState<string>('');
   const [courseDescription, setCourseDescription] = useState<string>('');
-  const [outcomes, setOutcomes] = useState<LearningOutcome[]>([{ id: Date.now(), text: '' }]);
-  const [courseUnits, setCourseUnits] = useState<CourseUnit[]>([{ id: Date.now(), name: '', topics: '' }]);
+  const [outcomes, setOutcomes] = useState<LearningOutcome[]>(initialOutcomes);
+  const [courseUnits, setCourseUnits] = useState<CourseUnit[]>(initialUnits);
   const [level, setLevel] = useState<string>('6');
   const [showDescriptors, setShowDescriptors] = useState<boolean>(false);
   const [result, setResult] = useState<EvaluationReport | null>(null);
@@ -491,6 +494,24 @@ export const LearningOutcomeEvaluator: React.FC = () => {
     }
   };
   
+  const handleReset = () => {
+    if (window.confirm("Are you sure you want to reset all fields? This will clear your current progress.")) {
+      setCourseTitle('');
+      setCourseCode('');
+      setCourseObjectives('');
+      setCourseDescription('');
+      setOutcomes([{ id: Date.now(), text: '' }]);
+      setCourseUnits([{ id: Date.now(), name: '', topics: '' }]);
+      setLevel('6');
+      setResult(null);
+      setApplicabilityReport(null);
+      setCurrentStep(1);
+      setExtractionSuccess(false);
+      setFilledViaExtraction(new Set());
+      localStorage.removeItem('oqf_evaluator_state');
+    }
+  };
+
   const StepIndicator = () => (
     <div className="max-w-4xl mx-auto mb-10">
       <div className="flex items-center justify-between relative">
@@ -1073,15 +1094,25 @@ export const LearningOutcomeEvaluator: React.FC = () => {
 
         {/* Global Navigation Footer */}
         <div className="max-w-4xl mx-auto flex items-center justify-between pb-20">
-          <button
-            type="button"
-            onClick={handlePrevStep}
-            disabled={currentStep === 1 || isLoading}
-            className={`flex items-center px-6 py-3 rounded-xl font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all ${currentStep === 1 ? 'opacity-0 pointer-events-none' : ''}`}
-          >
-            <IconChevronDown className="h-5 w-5 mr-2 rotate-90" />
-            Back
-          </button>
+          <div className="flex items-center space-x-4">
+            <button
+              type="button"
+              onClick={handlePrevStep}
+              disabled={currentStep === 1 || isLoading}
+              className={`flex items-center px-6 py-3 rounded-xl font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all ${currentStep === 1 ? 'opacity-0 pointer-events-none' : ''}`}
+            >
+              <IconChevronDown className="h-5 w-5 mr-2 rotate-90" />
+              Back
+            </button>
+            <button
+              type="button"
+              onClick={handleReset}
+              className="flex items-center px-4 py-3 text-red-600 dark:text-red-400 font-bold hover:bg-red-50 dark:hover:bg-red-900/10 rounded-xl transition-all text-sm"
+            >
+              <IconTrash className="h-4 w-4 mr-2" />
+              Reset All
+            </button>
+          </div>
 
           {currentStep < 3 && (
             <button

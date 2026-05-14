@@ -5,7 +5,7 @@ import { prepareFileForAI } from '../lib/fileUtils';
 import { type OQFCreditReport } from '../types';
 import { Loader } from './Loader';
 import { WaitingBar } from './WaitingBar';
-import { IconUpload, IconCheckCircle, IconXCircle, IconFile, IconInfo, IconClipboardList, IconSparkles, IconAlertCircle, IconFileText } from './Icon';
+import { IconUpload, IconCheckCircle, IconXCircle, IconFile, IconInfo, IconClipboardList, IconSparkles, IconAlertCircle, IconFileText, IconTrash } from './Icon';
 
 export const OQFCreditCalculator: React.FC = () => {
     const [isLoading, setIsLoading] = useState(false);
@@ -33,9 +33,17 @@ export const OQFCreditCalculator: React.FC = () => {
 
     // Persistence: Save to localStorage on change
     useEffect(() => {
-        const state = { report };
+        const state = { report, error };
         localStorage.setItem('oqf_calculator_state', JSON.stringify(state));
-    }, [report]);
+    }, [report, error]);
+
+    const handleReset = () => {
+        if (window.confirm("Are you sure you want to reset and start a new credit calculation?")) {
+            setReport(null);
+            setError(null);
+            localStorage.removeItem('oqf_calculator_state');
+        }
+    };
 
     const handleUpdatePartD = (updates: { summary?: any[], defaults?: any }) => {
         if (!report) return;
@@ -228,20 +236,21 @@ export const OQFCreditCalculator: React.FC = () => {
                     <h2 className="text-3xl font-black text-slate-800 dark:text-slate-100 tracking-tight">OQF Compliance Report</h2>
                     <div className="flex items-center space-x-3 export-ignore">
                         <button 
-                            onClick={handleExportHtml}
-                            disabled={isExporting}
-                            className="flex items-center px-4 py-2 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 text-sm font-bold rounded-xl border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-100 transition-all shadow-sm"
+                            onClick={handleReset}
+                            className="flex items-center px-4 py-2 text-red-600 dark:text-red-400 font-bold hover:bg-red-50 dark:hover:bg-red-900/10 rounded-xl transition-all text-sm mr-2"
                         >
-                            {isExporting ? <><Loader /> Exporting...</> : <><IconFileText className="h-4 w-4 mr-2" /> Export HTML</>}
+                            <IconTrash className="h-4 w-4 mr-2" />
+                            Reset All
                         </button>
                         <button 
-                            onClick={() => setReport(null)}
-                            className="px-4 py-2 text-sm font-bold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors"
+                             onClick={handleExportHtml}
+                             disabled={isExporting}
+                             className="flex items-center px-4 py-2 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 text-sm font-bold rounded-xl border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-100 transition-all shadow-sm"
                         >
-                            Analyze Another CDP
+                             {isExporting ? <><Loader /> Exporting...</> : <><IconFileText className="h-4 w-4 mr-2" /> Export HTML</>}
                         </button>
-                    </div>
-                </div>
+                     </div>
+                 </div>
 
                 {/* Course Info */}
                 <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
@@ -601,9 +610,20 @@ export const OQFCreditCalculator: React.FC = () => {
         <div className="max-w-4xl mx-auto space-y-12 py-10 relative">
             {isAnyBusy && <WaitingBar />}
             <div className="text-center space-y-4">
-                <div className="inline-flex items-center px-3 py-1 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-[10px] font-black uppercase tracking-widest border border-green-200 dark:border-green-800">
-                    <IconSparkles className="h-3 w-3 mr-2" />
-                    OQF Compliance Expert
+                <div className="flex flex-col items-center space-y-2">
+                    <div className="inline-flex items-center px-3 py-1 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-[10px] font-black uppercase tracking-widest border border-green-200 dark:border-green-800">
+                        <IconSparkles className="h-3 w-3 mr-2" />
+                        OQF Compliance Expert
+                    </div>
+                    {error && (
+                        <button 
+                            onClick={handleReset}
+                            className="text-[10px] font-black uppercase text-red-500 hover:text-red-600 flex items-center transition-all"
+                        >
+                            <IconTrash className="h-3 w-3 mr-1" />
+                            Reset All Data
+                        </button>
+                    )}
                 </div>
                 <h2 className="text-5xl font-black text-slate-800 dark:text-slate-100 tracking-tight leading-tight">
                     OQF Credit & NLH <br/> Calculation Workbook
