@@ -382,3 +382,23 @@ Based on the Oman Qualifications Framework (OQF) training materials, a Course De
 6.  **Manageability**: 
     - The number of learning outcomes should be manageable to ensure they can all be assessed within the given timeframe and resources.
 `;
+
+export const INDIVIDUAL_LO_CHECKLIST_ITEMS = [
+    "Relate to the course aims.",
+    "Relate directly to the PLOs.",
+    "Begin with a clear, measurable active verb.",
+    "It is clear, precise, and unambiguous.",
+    "It is assessable.",
+    "Covers the content of the course.",
+    "Avoid evaluative or subjective language.",
+    "Avoids jargon, abbreviations or technical terms.",
+    "Is distinct from other learning outcomes."
+];
+
+export const COLLECTIVE_LO_CHECKLIST_ITEMS = [
+    "Limited to manageable number.",
+    "Not too broad.",
+    "Not too narrow.",
+    "Achievable within the course timeframe.",
+    "Appropriate for the educational pathway."
+];

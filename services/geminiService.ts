@@ -1,6 +1,6 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { type EvaluationReport, type EvaluationResponse, type OQFCourseComplianceReport, type ApplicabilityReport } from "../types";
-import { OQF_DESCRIPTORS, OQF_COMPLIANCE_CRITERIA } from '../constants/oqfConstants';
+import { OQF_DESCRIPTORS, OQF_COMPLIANCE_CRITERIA, INDIVIDUAL_LO_CHECKLIST_ITEMS, COLLECTIVE_LO_CHECKLIST_ITEMS } from '../constants/oqfConstants';
 
 // Initialize Gemini directly in the frontend. 
 // AI Studio will inject the GEMINI_API_KEY into the process.env in the browser.
@@ -489,18 +489,13 @@ export const generateOQFCourseCompliance = async (
     1. Course Information (Code, Title, Level, Credit, Program, Proposed Level/Credit).
     2. Course Intent and Role (Description, LOs, PLO Mapping for ALL 4 programs, Indicative Content, Title Reflection).
     3. LO Quality Checklist:
-       - Individual LO Checklist (Evaluate EACH CLO for these 9 items):
-         1. Relate to the course aims.
-         2. Relate directly to the PLOs.
-         3. Begin with a clear, measurable active verb.
-         4. It is clear, precise, and unambiguous.
-         5. It is assessable.
-         6. Covers the content of the course.
-         7. Avoid evaluative or subjective language.
-         8. Avoids jargon, abbreviations or technical terms.
-         9. Is distinct from other learning outcomes.
-       - Collective Checklist (Evaluate the set of CLOs for overlapping coverage, progression, and overall compliance).
+       - Individual LO Checklist: Evaluate EACH CLO (one by one) against exactly these items (as rows):
+         ${INDIVIDUAL_LO_CHECKLIST_ITEMS.map((item, idx) => `${idx + 1}. ${item}`).join('\n         ')}
+       - Collective Checklist: Evaluate the entire set of CLOs (one by one) against exactly these items (as rows):
+         ${COLLECTIVE_LO_CHECKLIST_ITEMS.map((item, idx) => `${idx + 1}. ${item}`).join('\n         ')}
 
+    For every checklist item (individual and collective), provide a Boolean "satisfied", a specific "comment" or feedback, and any found "evidence" from the text.
+    
     CRITICAL: In PLO Mapping, map each LO to relevant PLOs from ALL FOUR specializations (SE, IS, CL, NWSY).
 
     Output strictly in the specified JSON format.
