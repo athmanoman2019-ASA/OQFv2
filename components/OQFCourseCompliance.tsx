@@ -242,10 +242,11 @@ export const OQFCourseCompliance: React.FC = () => {
         text += `## 3. Learning Outcomes Quality Checklist\n`;
         finalIndividualLOs.forEach(lo => {
             text += `\nLO#${lo.loNumber}: ${lo.loText}\n`;
-            text += `| Checklist Item | Compliant (Y/N) | Evidence | Comment |\n`;
-            text += `|----------------|-----------------|----------|---------|\n`;
+            text += `| Checklist Item | Compliant (Y/N) | Evidence / Comment |\n`;
+            text += `|----------------|-----------------|--------------------|\n`;
             lo.items.forEach(item => {
-                text += `| ${item.question} | ${item.satisfied ? 'Y' : 'N'} | ${item.evidence || ''} | ${item.comment} |\n`;
+                const combined = `Evidence: ${item.evidence || 'N/A'}<br/>Comment: ${item.comment}`;
+                text += `| ${item.question} | ${item.satisfied ? 'Y' : 'N'} | ${combined} |\n`;
             });
         });
         text += `\n`;
@@ -715,16 +716,15 @@ export const OQFCourseCompliance: React.FC = () => {
                                             <thead>
                                                 <tr className="bg-slate-50 dark:bg-slate-900/50 text-[10px] font-black uppercase tracking-widest text-slate-400 border-b border-slate-200 dark:border-slate-700">
                                                     <th className="px-4 py-3 w-1/3">Checklist Item</th>
-                                                    <th className="px-4 py-3 text-center w-24 font-serif italic text-indigo-400 bg-indigo-50/30">Status</th>
-                                                    <th className="px-4 py-3">Evidence</th>
-                                                    <th className="px-4 py-3">Comment / Feedback</th>
+                                                    <th className="px-4 py-3 text-center w-36 font-bold text-slate-500 bg-slate-100/30">Compliant (Y/N)</th>
+                                                    <th className="px-4 py-3">Evidence / Comment</th>
                                                 </tr>
                                             </thead>
                                             <tbody className="text-xs divide-y divide-slate-100 dark:divide-slate-800">
                                                 {lo.items.map((item, ii) => (
                                                     <tr key={ii} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/10 transition-colors">
-                                                        <td className="px-4 py-3 text-slate-700 dark:text-slate-300 font-bold leading-tight">{item.question}</td>
-                                                        <td className="px-4 py-3 text-center">
+                                                        <td className="px-4 py-3 text-slate-700 dark:text-slate-300 font-bold leading-tight align-top">{item.question}</td>
+                                                        <td className="px-4 py-3 text-center align-top">
                                                             <button 
                                                                 onClick={() => updateIndividualChecklist(i, ii, { satisfied: !item.satisfied })}
                                                                 className={`inline-flex items-center px-4 py-1.5 rounded-full text-[10px] font-black transition-all ${item.satisfied ? 'bg-green-100 text-green-700 ring-2 ring-green-500/20' : 'bg-red-100 text-red-700 ring-2 ring-red-500/20'}`}
@@ -732,21 +732,25 @@ export const OQFCourseCompliance: React.FC = () => {
                                                                 {item.satisfied ? 'Y' : 'N'}
                                                             </button>
                                                         </td>
-                                                        <td className="px-4 py-3">
-                                                            <textarea 
-                                                                value={item.evidence || ''}
-                                                                onChange={(e) => updateIndividualChecklist(i, ii, { evidence: e.target.value })}
-                                                                placeholder="Enter evidence..."
-                                                                className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-[11px] font-medium focus:ring-2 focus:ring-indigo-500/20 outline-none resize-none min-h-[60px]"
-                                                            />
-                                                        </td>
-                                                        <td className="px-4 py-3">
-                                                            <textarea 
-                                                                value={item.comment}
-                                                                onChange={(e) => updateIndividualChecklist(i, ii, { comment: e.target.value })}
-                                                                placeholder="Enter comments..."
-                                                                className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-[11px] font-medium focus:ring-2 focus:ring-indigo-500/20 outline-none resize-none min-h-[60px]"
-                                                            />
+                                                        <td className="px-4 py-3 space-y-3 align-top">
+                                                            <div>
+                                                                <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Evidence:</div>
+                                                                <textarea 
+                                                                    value={item.evidence || ''}
+                                                                    onChange={(e) => updateIndividualChecklist(i, ii, { evidence: e.target.value })}
+                                                                    placeholder="Enter evidence..."
+                                                                    className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-[11px] font-medium focus:ring-2 focus:ring-indigo-500/20 outline-none resize-none min-h-[50px]"
+                                                                />
+                                                            </div>
+                                                            <div>
+                                                                <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Comment / Feedback:</div>
+                                                                <textarea 
+                                                                    value={item.comment}
+                                                                    onChange={(e) => updateIndividualChecklist(i, ii, { comment: e.target.value })}
+                                                                    placeholder="Enter comments..."
+                                                                    className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-[11px] font-medium focus:ring-2 focus:ring-indigo-500/20 outline-none resize-none min-h-[50px]"
+                                                                />
+                                                            </div>
                                                         </td>
                                                     </tr>
                                                 ))}
