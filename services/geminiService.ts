@@ -479,11 +479,23 @@ export const generateOQFCourseCompliance = async (
 ): Promise<OQFCourseComplianceReport> => {
   const prompt = `
     Analyze the provided course documents to fill the OQF Course Compliance Document.
+    Act as an OQF compliance specialist. Perform a strict, deep, and critical re-evaluation of the Learning Outcomes Quality Checklist (including the Collective Checklist).
+    Do NOT assume the LOs are compliant; critically assess each one against the checklist criteria.
     
     You have been provided with:
     - Syllabus/Handbook
     - Consolidated PLO File (SE, IS, CL, NWSY)
     - Optional Template
+
+    Strict Compliance Rules & Evaluation Criteria:
+    1. Prohibited verbs: Do NOT accept 'understand', 'know', 'learn', 'be aware of', 'be familiar with', 'appreciate', 'grasp', 'comprehend'.
+    2. Acceptable verbs for Diploma (OQF Level 5-6): 'define', 'list', 'state', 'identify', 'describe', 'explain', 'classify', 'compare', 'distinguish', 'apply', 'demonstrate', 'use', 'calculate', 'configure', 'analyse', 'examine', 'differentiate', 'evaluate' (with caution), 'design', 'develop' (with caution).
+    3. Compound LO rule: If an LO contains "and" or "or" linking two distinct verbs or two distinct objects, mark "satisfied" as false for measurability or assessment.
+    4. Evaluative language: Words like "well-formatted", "good", "appropriate", "effective", "creative", "innovative" are subjective and non-compliant. Mark "satisfied" as false.
+    5. Jargon & Abbreviations: First use of any abbreviation (e.g., SDLC, IoT, HTML) must be expanded/defined. If not, mark "satisfied" as false.
+    6. Vague qualifiers: Phrases like "real scenario", "different phases", "various tools", "some", "a range of" without specification are non-compliant. Mark "satisfied" as false.
+    7. Clearness test: Could an external reviewer understand exactly what performance to expect? If not, mark "satisfied" as false.
+    8. Assessability test: If the LO requires judgment without observable evidence (e.g., "comply with", "demonstrate awareness of"), or merges multiple assessable skills, mark "satisfied" as false.
 
     Sections to fill:
     1. Course Information (Code, Title, Level, Credit, Program, Proposed Level/Credit).
@@ -494,9 +506,9 @@ export const generateOQFCourseCompliance = async (
        - Collective Checklist: Evaluate the entire set of CLOs (one by one) against exactly these items (as rows):
          ${COLLECTIVE_LO_CHECKLIST_ITEMS.map((item, idx) => `${idx + 1}. ${item}`).join('\n         ')}
 
-    For every checklist item (individual and collective), provide a Boolean "satisfied", a specific "comment" or feedback, and any found "evidence" from the text.
+    For every checklist item (individual and collective), provide a Boolean "satisfied" (true/false), a specific "comment" or feedback (1-2 sentences with brief, evidence-based details), and any found "evidence" from the text.
     
-    CRITICAL: In PLO Mapping, map each LO to relevant PLOs from ALL FOUR specializations (SE, IS, CL, NWSY).
+    CRITICAL: In PLO Mapping, map each LO to relevant PLOs from ALL FOUR specializations (SE, IS, CL, NWSY). Identify at least one relevant PLO code (e.g., D-SE-PLO1, D-IS-PLO4) in the explanation.
 
     Output strictly in the specified JSON format.
   `;
