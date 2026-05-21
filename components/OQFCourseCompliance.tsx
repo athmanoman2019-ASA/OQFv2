@@ -732,14 +732,19 @@ export const OQFCourseCompliance: React.FC = () => {
                                                                 {item.satisfied ? 'Y' : 'N'}
                                                             </button>
                                                         </td>
-                                                        <td className="px-4 py-3 space-y-3 align-top">
+                                                        <td className={`px-4 py-3 space-y-3 align-top transition-all ${!item.satisfied ? 'bg-red-50/25 dark:bg-red-950/5 border-l-4 border-l-red-500' : ''}`}>
+                                                            {!item.satisfied && (
+                                                                <div className="flex items-center text-[9px] font-black uppercase tracking-wider text-red-600 dark:text-red-400 mb-1">
+                                                                    <span className="mr-1">⚠️</span> Non-Compliance Justification Required
+                                                                </div>
+                                                            )}
                                                             <div>
                                                                 <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Evidence:</div>
                                                                 <textarea 
                                                                     value={item.evidence || ''}
                                                                     onChange={(e) => updateIndividualChecklist(i, ii, { evidence: e.target.value })}
                                                                     placeholder="Enter evidence..."
-                                                                    className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-[11px] font-medium focus:ring-2 focus:ring-indigo-500/20 outline-none resize-none min-h-[50px]"
+                                                                    className={`w-full bg-slate-50 dark:bg-slate-900/50 border rounded-lg p-2 text-[11px] font-medium outline-none resize-none min-h-[50px] transition-all ${!item.satisfied ? 'border-red-300 dark:border-red-800/60 focus:ring-2 focus:ring-red-500/20' : 'border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-indigo-500/20'}`}
                                                                 />
                                                             </div>
                                                             <div>
@@ -748,7 +753,7 @@ export const OQFCourseCompliance: React.FC = () => {
                                                                     value={item.comment}
                                                                     onChange={(e) => updateIndividualChecklist(i, ii, { comment: e.target.value })}
                                                                     placeholder="Enter comments..."
-                                                                    className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-[11px] font-medium focus:ring-2 focus:ring-indigo-500/20 outline-none resize-none min-h-[50px]"
+                                                                    className={`w-full bg-slate-50 dark:bg-slate-900/50 border rounded-lg p-2 text-[11px] font-medium outline-none resize-none min-h-[50px] transition-all ${!item.satisfied ? 'border-red-300 dark:border-red-800/60 focus:ring-2 focus:ring-red-500/20' : 'border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-indigo-500/20'}`}
                                                                 />
                                                             </div>
                                                         </td>
@@ -785,14 +790,19 @@ export const OQFCourseCompliance: React.FC = () => {
                                                             {item.satisfied ? 'Y' : 'N'}
                                                         </button>
                                                     </td>
-                                                    <td className="px-4 py-3 space-y-3 align-top">
+                                                    <td className={`px-4 py-3 space-y-3 align-top transition-all ${!item.satisfied ? 'bg-red-50/25 dark:bg-red-950/5 border-l-4 border-l-red-500' : ''}`}>
+                                                        {!item.satisfied && (
+                                                            <div className="flex items-center text-[9px] font-black uppercase tracking-wider text-red-600 dark:text-red-400 mb-1">
+                                                                <span className="mr-1">⚠️</span> Non-Compliance Justification Required
+                                                            </div>
+                                                        )}
                                                         <div>
                                                             <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Evidence:</div>
                                                             <textarea 
                                                                 value={item.evidence || ''}
                                                                 onChange={(e) => updateCollectiveChecklist(i, { evidence: e.target.value })}
                                                                 placeholder="Enter evidence..."
-                                                                className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-[11px] font-medium focus:ring-2 focus:ring-emerald-500/20 outline-none resize-none min-h-[50px]"
+                                                                className={`w-full bg-slate-50 dark:bg-slate-900/50 border rounded-lg p-2 text-[11px] font-medium outline-none resize-none min-h-[50px] transition-all ${!item.satisfied ? 'border-red-300 dark:border-red-800/60 focus:ring-2 focus:ring-red-500/20' : 'border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-emerald-500/20'}`}
                                                             />
                                                         </div>
                                                         <div>
@@ -801,7 +811,7 @@ export const OQFCourseCompliance: React.FC = () => {
                                                                 value={item.comment}
                                                                 onChange={(e) => updateCollectiveChecklist(i, { comment: e.target.value })}
                                                                 placeholder="Enter comments..."
-                                                                className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-[11px] font-medium focus:ring-2 focus:ring-emerald-500/20 outline-none resize-none min-h-[50px]"
+                                                                className={`w-full bg-slate-50 dark:bg-slate-900/50 border rounded-lg p-2 text-[11px] font-medium outline-none resize-none min-h-[50px] transition-all ${!item.satisfied ? 'border-red-300 dark:border-red-800/60 focus:ring-2 focus:ring-red-500/20' : 'border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-emerald-500/20'}`}
                                                             />
                                                         </div>
                                                     </td>
